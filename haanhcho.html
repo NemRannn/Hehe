@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lucky Spin - Bánh xe may mắn</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #wheel {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            position: relative;
+            margin: 30px auto;
+            overflow: hidden;
+            border: 5px solid #333;
+            transition: transform 3s cubic-bezier(0.17, 0.67, 0.21, 0.99);
+        }
+        .wheel-section {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            left: 0;
+            top: 0;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding-bottom: 80px;
+            font-weight: bold;
+        }
+        #spin-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #share-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #0084ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #options {
+            margin: 20px;
+        }
+        textarea {
+            width: 80%;
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lucky Spin - Bánh xe may mắn</h1>
+    
+    <div id="options">
+        <p>Nhập các lựa chọn (mỗi lựa chọn 1 dòng):</p>
+        <textarea id="choices" placeholder="Ví dụ:
+Ăn trưa ở nhà
+Đi ăn sushi
+Ăn phở
+Gọi đồ giao tận nơi"></textarea>
+        <br>
+        <button id="create-btn">Tạo bánh xe</button>
+    </div>
+    
+    <div id="wheel-container" style="display:none;">
+        <div id="wheel"></div>
+        <button id="spin-btn">QUAY NGAY!</button>
+        <button id="share-btn">Chia sẻ qua Messenger</button>
+        <p id="result"></p>
+    </div>
+    
+    <script>
+        const choicesTextarea = document.getElementById('choices');
+        const createBtn = document.getElementById('create-btn');
+        const wheelContainer = document.getElementById('wheel-container');
+        const wheel = document.getElementById('wheel');
+        const spinBtn = document.getElementById('spin-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const resultText = document.getElementById('result');
+        
+        let choices = [];
+        let currentRotation = 0;
+        
+        createBtn.addEventListener('click', createWheel);
+        spinBtn.addEventListener('click', spinWheel);
+        shareBtn.addEventListener('click', shareWheel);
+        
+        function createWheel() {
+            const choicesText = choicesTextarea.value.trim();
+            if (!choicesText) return;
+            
+            choices = choicesText.split('\n').filter(choice => choice.trim());
+            if (choices.length < 2) {
+                alert('Vui lòng nhập ít nhất 2 lựa chọn');
+                return;
+            }
+            
+            // Tạo bánh xe
+            wheel.innerHTML = '';
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+            
+            const angle = 360 / choices.length;
+            
+            choices.forEach((choice, index) => {
+                const section = document.createElement('div');
+                section.className = 'wheel-section';
+                section.textContent = choice;
+                section.style.backgroundColor = colors[index % colors.length];
+                section.style.transform = rotate(${angle * index}deg) skewY(${90 - angle}deg);
+                wheel.appendChild(section);
+            });
+            
+            wheelContainer.style.display = 'block';
+        }
+        
+        function spinWheel() {
+            if (choices.length === 0) return;
+            
+            spinBtn.disabled = true;
+            resultText.textContent = '';
+            
+            // Random góc quay (5-10 vòng + góc random)
+            const spinAngle = 1800 + Math.floor(Math.random() * 1800);
+            currentRotation += spinAngle;
+            wheel.style.transform = rotate(${currentRotation}deg);
+            
+            // Tính kết quả sau khi quay xong
+            setTimeout(() => {
+                const normalizedRotation = currentRotation % 360;
+                const sectionAngle = 360 / choices.length;
+                const winningIndex = Math.floor(((360 - normalizedRotation) % 360) / sectionAngle);
+                const result = choices[winningIndex];
+                
+                resultText.textContent = Kết quả: ${result};
+                spinBtn.disabled = false;
+            }, 3000);
+        }
+        
+        function shareWheel() {
+            if (choices.length === 0) return;
+            
+            // Tạo URL chia sẻ
+            const encodedChoices = encodeURIComponent(JSON.stringify(choices));
+            const url = ${window.location.href.split('?')[0]}?choices=${encodedChoices};
+            
+            // Chia sẻ qua Messenger (cần triển khai chính xác theo Facebook API)
+            alert(Copy link này và gửi cho bạn bè qua Messenger:\n\n${url});
+            
+            // Trên thực tế, bạn có thể sử dụng Facebook Share API:
+            // window.open(https://www.facebook.com/dialog/send?app_id=YOUR_APP_ID&link=${encodeURIComponent(url)}&redirect_uri=${encodeURIComponent(window.location.href)});
+        }
+        
+        // Kiểm tra URL có tham số chia sẻ không
+        function checkSharedWheel() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedChoices = urlParams.get('choices');
+            
+            if (sharedChoices) {
+                try {
+                    choices = JSON.parse(decodeURIComponent(sharedChoices));
+                    choicesTextarea.value = choices.join('\n');
+                    createWheel();
+                } catch (e) {
+                    console.error('Invalid shared data');
+                }
+            }
+        }
+        
+        // Kiểm tra khi tải trang
+        window.onload = checkSharedWheel;
+    </script>
+</body>
+</html>
